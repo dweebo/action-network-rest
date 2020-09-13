@@ -1,12 +1,22 @@
 module ActionNetworkRest
+
+  LESS_THAN = "lt"
+  GREATER_THAN = "gt"
+  EQUALS = "eq"
+
   class Base < Vertebrae::Model
+
     def get(id)
       response = client.get_request "#{base_path}#{url_escape(id)}"
       object_from_response(response)
     end
 
-    def list(page: 1)
-      response = client.get_request "#{base_path}?page=#{page}"
+    def list(page: 1, filter: {})
+      list_query = "#{base_path}?page=#{page}"
+      if filter.present?
+        list_query += "&" + format_list_filter(filter)
+      end
+      response = client.get_request list_query
       objects = response.body.dig('_embedded', osdi_key)
       return [] if objects.nil?
 
@@ -48,6 +58,20 @@ module ActionNetworkRest
 
     def action_network_url(path)
       client.connection.configuration.endpoint + path
+    end
+
+    def format_list_filter(filter)
+      if filter[:value].is_a? Date
+        filter_value = filter[:value].strftime("%Y-%m-%d")
+      else
+        filter_value = filter[:value]&.to_s
+      end
+      return "filter=#{filter[:field]&.to_s} #{filter[:op]} '#{filter_value}'"
+      #return "filter=created_date gt '2020-09-10' or created_date lt '2020-09-11'"
+
+      #return "filter=(email_address eq 'dweebo@gmail.com' or email_address eq 'peter@hewittsoft.com') and created_date lt '2018-01-01'"
+      #
+      #/api/v2/people/?page=1&filter=modified_date gt '2014-03-25' with {} and {}
     end
   end
 end

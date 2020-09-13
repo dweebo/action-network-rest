@@ -121,6 +121,38 @@ describe ActionNetworkRest::People do
         expect(people.last.email_addresses.first.address).to eq 'janedoe@mail.com'
       end
     end
+
+    context 'requesting with creation_date gt filter' do
+      let!(:list_stub) {
+        stub_actionnetwork_request("/people/?filter=created_date%20gt%20'2020-09-13'&page=1", method: :get)
+          .to_return(status: 200, body: response_body)
+      }
+
+      let(:filter_date) { Date.new(2020, 9, 13) }
+
+      it 'should retrieve the people data with greater than filter' do
+        filter = { field: :created_date, op: ActionNetworkRest::GREATER_THAN, value: filter_date }
+        people = subject.people.list(filter: filter)
+
+        expect(list_stub).to have_been_requested
+        expect(people.count).to eq 2
+      end
+    end
+
+    context 'requesting email_address eq filter' do
+      let!(:list_stub) {
+        stub_actionnetwork_request("/people/?filter=email_address%20eq%20'user@example.com'&page=1", method: :get)
+          .to_return(status: 200, body: response_body)
+      }
+
+      it 'should retrieve the people data with equals filter' do
+        filter = { field: :email_address, op: ActionNetworkRest::EQUALS, value: 'user@example.com' }
+        people = subject.people.list(filter: filter)
+
+        expect(list_stub).to have_been_requested
+        expect(people.count).to eq 2
+      end
+    end
   end
 
   describe '#create' do
